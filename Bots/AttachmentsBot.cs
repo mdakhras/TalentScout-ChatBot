@@ -167,7 +167,7 @@ namespace Microsoft.BotBuilderSamples
                 // Download the file from the provided URL
                 using (var client = new HttpClient())
                 using (var response = await client.GetAsync(remoteFileUrl))
-                using (var stream =  await response.Content.ReadAsStreamAsync())
+                using (var stream = await response.Content.ReadAsStreamAsync())
                 {
 
                     //TODO: 1- Decomment below LOC, where its enable upload PDF file to Azure Storage
@@ -183,24 +183,16 @@ namespace Microsoft.BotBuilderSamples
 
                     //Extract Content
                     // Step 1: Extract text from PDF
-
-                    
-                  
-                    var jobDescriptionText = await  _formRecognizerService.ExtractTextFromPdfAsync(remoteFileUrl);
-
-
-                    var questions = _openAIService.GenerateInterviewQuestions(jobDescriptionText);
+                    var jobDescriptionText = await _formRecognizerService.ExtractTextFromPdfAsync(remoteFileUrl);
+                    var questions = await _openAIService.GenerateInterviewQuestions(jobDescriptionText);
 
                     replyText += $"Attachment \"{file.Name}\"" +
                              $" has been received and saved to \"{localFileName}\"\r\n" +
-                             $"{jobDescriptionText}\"";
+                             // $"{jobDescriptionText}\"\r\n"+
+                             $"{questions.ToString()}\"\r\n";
                 }
 
 
-              
-
-
-                
             }
 
             return MessageFactory.Text(replyText);

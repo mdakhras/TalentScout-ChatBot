@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
+using Azure.AI.OpenAI;
 
 namespace HandlingAttachmentsBot
 {
@@ -16,41 +17,45 @@ namespace HandlingAttachmentsBot
         private readonly Azure.AI.OpenAI.AzureOpenAIClient _openAIClient;
         private readonly string _apiKey;
         private readonly string _endPoint;
+        private readonly string _deploymentname;
+
         public class OpenAIRequest
         {
             public string Prompt { get; set; }
             public int MaxTokens { get; set; } = 150;
         }
 
-        public OpenAIService(string openAiEndpoint, string openAiKey)
+        public OpenAIService(string openAiEndpoint, string openAiKey, string deploymentname)
         {
 
-            _openAIClient = new(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
+            //_openAIClient = new(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
             _apiKey = openAiKey;
             _endPoint= openAiEndpoint;
-            //_openAIClient = new AzureOpenAIClient(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
+            _deploymentname = deploymentname;
+            _openAIClient = new AzureOpenAIClient(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
         }
 
         public async Task<string> GenerateInterviewQuestions(string jobDescription)
         {
+                  
+            ChatClient chatClient = _openAIClient.GetChatClient(_deploymentname);
+            ChatCompletion completion = chatClient.CompleteChat(
+              new ChatMessage[] {
+                     new SystemChatMessage($"Based on the following job description, generate five interview questions to ask candidates:\n{jobDescription}"),
+              },
+              new ChatCompletionOptions()
+              {
+                  //PastMessages = 10,
+                  Temperature = (float)0.7,
+                  MaxTokens = 800,
+                  // StopSequences = [],
+                  // NucleusSamplingFactor = (float)0.95,
+                  FrequencyPenalty = (float)0,
+                  PresencePenalty = (float)0,
+              }
+            );
 
-            var client = new HttpClient();
-            var apiKey = _apiKey;
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-
-            var prompt = $"Based on the following job description, generate interview questions to ask candidates:\n{jobDescription}";
-
-            var request = new OpenAIRequest
-            {
-                Prompt = prompt
-            };
-
-            var jsonContent = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            //https://YOUR_OPENAI_API_ENDPOINT/openai/deployments/YOUR_DEPLOYMENT_ID/completions
-            var response = await client.PostAsync(_endPoint, jsonContent);
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            return responseContent; // Parse and extract questions from response
+            return $"{completion.Role.ToString()}: {completion.Content[0].Text}";
 
         }
 

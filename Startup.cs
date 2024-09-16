@@ -65,12 +65,15 @@ namespace Microsoft.BotBuilderSamples
             
             //OPenAI Service
             // Read the EndPoint from appsettings.json
-            var openAIServiceEndPoint = Configuration.GetSection("FormRecognizer:Endpoint").Value;
+            var openAIServiceEndPoint = Configuration.GetSection("AiService:Endpoint").Value;
 
             // Read the ApiKey from appsettings.json
-            var openAIServiceEndPointApiKey = Configuration.GetSection("FormRecognizer:ApiKey").Value;
+            var openAIServiceEndPointApiKey = Configuration.GetSection("AiService:ApiKey").Value;
 
-            var openAIService = new OpenAIService(openAIServiceEndPoint, openAIServiceEndPointApiKey);
+            // Read the Model DeploymentName from appsettings.json
+            var DeploymentName = Configuration.GetSection("AiService:DeploymentName").Value;
+
+            var openAIService = new OpenAIService(openAIServiceEndPoint, openAIServiceEndPointApiKey, DeploymentName);
             services.AddSingleton(openAIService);
 
             #endregion
