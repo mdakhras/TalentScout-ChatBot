@@ -60,11 +60,6 @@ namespace Microsoft.BotBuilderSamples
             // Read the ApiKey from appsettings.json
             var FormRecognizerApiKey = Configuration.GetSection("FormRecognizer:ApiKey").Value;
 
-            //TODO:3- check how to use already Defined Client, instaead of creating custom service
-            //// Create FormRecognizerServiceClient using the connection string from appsettings.json
-            //var FormRecognizerClient = new FormRecognizerClient(new Uri(FormRecognizerEndPoint), new AzureKeyCredential(FormRecognizerApiKey));
-            //services.AddSingleton(FormRecognizerClient);
-
             //formRecognizerService
             var formRecognizerService = new FormRecognizerService(FormRecognizerEndPoint, FormRecognizerApiKey);
             services.AddSingleton(formRecognizerService);
@@ -87,8 +82,6 @@ namespace Microsoft.BotBuilderSamples
 
             var openAIService = new OpenAIService(openAIServiceEndPoint, openAIServiceEndPointApiKey, DeploymentName, tableServiceClient);
             services.AddSingleton(openAIService);
-
-
 
             #endregion
 

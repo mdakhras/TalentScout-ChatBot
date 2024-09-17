@@ -16,7 +16,7 @@ namespace HandlingAttachmentsBot
 {
     public class OpenAIService
     {
-        //TODO: 2- is not used, and endpoint url used directly, needs to be reviewied
+        
         private readonly Azure.AI.OpenAI.AzureOpenAIClient _openAIClient;
         private readonly string _apiKey;
         private readonly string _endPoint;

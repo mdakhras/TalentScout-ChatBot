@@ -78,8 +78,6 @@ namespace Microsoft.BotBuilderSamples
             {
                 // Assume the user's response is their selected type
                 userProfile.UserType = turnContext.Activity.Text;
-                //TODO: Clean
-                //await turnContext.SendActivityAsync($"User type set to {userProfile.UserType}.", cancellationToken: cancellationToken);
                 await _userProfileAccessor.SetAsync(turnContext, userProfile, cancellationToken);
                 await _userState.SaveChangesAsync(turnContext, cancellationToken: cancellationToken);
 
@@ -101,13 +99,7 @@ namespace Microsoft.BotBuilderSamples
                 await HandleUserTypeSpecificLogic(turnContext, userProfile, cancellationToken);
            
 
-            //TODO: Clean Comment
-
-            //var reply = await ProcessInput(turnContext, cancellationToken);
-            //await turnContext.SendActivityAsync("HI");
-            //// Respond to the user.
-            //await turnContext.SendActivityAsync(reply, cancellationToken);
-            //await DisplayOptionsAsync(turnContext, cancellationToken);
+           
         }
   
         private static async Task DisplayOptionsAsync(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -224,7 +216,7 @@ namespace Microsoft.BotBuilderSamples
                 using (var stream = await response.Content.ReadAsStreamAsync())
                 {
 
-                    //TODO: 1- Decomment below LOC, where its enable upload PDF file to Azure Storage
+                    
                     // Get a reference to the blob container
                     var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                     await containerClient.CreateIfNotExistsAsync();
@@ -344,13 +336,7 @@ namespace Microsoft.BotBuilderSamples
 
         private async Task HandleCandidateAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
-            //TODO: Clean
-            // Candidate-specific logic
-           // await turnContext.SendActivityAsync("Hello Candidate! How can I assist you today?", cancellationToken: cancellationToken);
-            
-           
-
-           // await turnContext.SendActivityAsync(reply, cancellationToken);
+            //TODO: Candidate-specific logic Goes here
         }
 
         private async Task HandleInterviewerAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
