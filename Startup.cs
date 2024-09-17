@@ -35,6 +35,11 @@ namespace Microsoft.BotBuilderSamples
         {
             #region add cloud Client service
 
+            // For simplicity, use in-memory storage; for production, consider Azure Blob Storage or Cosmos DB
+            services.AddSingleton<IStorage, MemoryStorage>();
+
+            // Create the User state
+            services.AddSingleton<UserState>();
 
             // Blob Service
             // Read the connection string from appsettings.json

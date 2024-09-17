@@ -14,6 +14,7 @@ using Azure;
 using Azure.AI.FormRecognizer;
 using Azure.Storage.Blobs;
 using HandlingAttachmentsBot;
+using HandlingAttachmentsBot.Model;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Schema;
@@ -33,27 +34,80 @@ namespace Microsoft.BotBuilderSamples
         private static BlobServiceClient _blobServiceClient;
         private static FormRecognizerService _formRecognizerService;
         private static OpenAIService _openAIService;
-
         private static string _containerName = "pdf-jobs"; // Name of the container in your blob storage
+        private readonly UserState _userState;
+        private readonly IStatePropertyAccessor<UserProfile> _userProfileAccessor;
 
-        public AttachmentsBot(BlobServiceClient blobServiceClient, FormRecognizerService formRecognizerService,OpenAIService openAIService)
+        public AttachmentsBot(BlobServiceClient blobServiceClient, FormRecognizerService formRecognizerService,OpenAIService openAIService, UserState userState)
         {
             _blobServiceClient = blobServiceClient;
             _formRecognizerService = formRecognizerService;
             _openAIService = openAIService;
+            _userState = userState;
+            _userProfileAccessor = _userState.CreateProperty<UserProfile>("UserProfile");
         }
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
-            await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            //await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            var userProfile = await _userProfileAccessor.GetAsync(turnContext, () => new UserProfile());
+
+            if (string.IsNullOrEmpty(userProfile.UserType))
+            {
+                // Prompt the user to select their type
+                var reply = MessageFactory.Text("Welcome! Please select your user type:");
+                reply.SuggestedActions = new SuggestedActions()
+                {
+                    Actions = new List<CardAction>()
+            {
+                new CardAction() { Title = "Candidate", Type = ActionTypes.ImBack, Value = "Candidate" },
+                new CardAction() { Title = "HR Assitant", Type = ActionTypes.ImBack, Value = "HR Assistant" },
+                //new CardAction() { Title = "Administrator", Type = ActionTypes.ImBack, Value = "Administrator" },
+            },
+                };
+                await turnContext.SendActivityAsync(reply, cancellationToken);
+            }
         }
 
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
-            var reply = await ProcessInput(turnContext, cancellationToken);
-            await turnContext.SendActivityAsync("HI");
-            // Respond to the user.
-            await turnContext.SendActivityAsync(reply, cancellationToken);
-            await DisplayOptionsAsync(turnContext, cancellationToken);
+
+
+            var userProfile = await _userProfileAccessor.GetAsync(turnContext, () => new UserProfile());
+
+            if (string.IsNullOrEmpty(userProfile.UserType))
+            {
+                // Assume the user's response is their selected type
+                userProfile.UserType = turnContext.Activity.Text;
+                //TODO: Clean
+                //await turnContext.SendActivityAsync($"User type set to {userProfile.UserType}.", cancellationToken: cancellationToken);
+                await _userProfileAccessor.SetAsync(turnContext, userProfile, cancellationToken);
+                await _userState.SaveChangesAsync(turnContext, cancellationToken: cancellationToken);
+
+                //show messag based on user type
+                if(userProfile.UserType.Equals("HR Assistant"))
+                {
+                    // Interviewer-specific logic
+                    await turnContext.SendActivityAsync("Hello HR Assitant! Would you like to generate interview questions? please upload Post Description here! \"", cancellationToken: cancellationToken);
+                   
+                }
+                else if (userProfile.UserType.Equals("Candidate"))
+                {
+                    // Candidate-specific logic
+                    await turnContext.SendActivityAsync("Hello Candidate! How can I assist you today?", cancellationToken: cancellationToken);
+                }
+            }
+           
+                // Continue with behavior based on user type
+                await HandleUserTypeSpecificLogic(turnContext, userProfile, cancellationToken);
+           
+
+            //TODO: Clean Comment
+
+            //var reply = await ProcessInput(turnContext, cancellationToken);
+            //await turnContext.SendActivityAsync("HI");
+            //// Respond to the user.
+            //await turnContext.SendActivityAsync(reply, cancellationToken);
+            //await DisplayOptionsAsync(turnContext, cancellationToken);
         }
   
         private static async Task DisplayOptionsAsync(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -266,6 +320,50 @@ namespace Microsoft.BotBuilderSamples
                 ContentType = "image/png",
                 ContentUrl = "https://docs.microsoft.com/en-us/bot-framework/media/how-it-works/architecture-resize.png",
             };
+        }
+
+        private async Task HandleUserTypeSpecificLogic(ITurnContext<IMessageActivity> turnContext, UserProfile userProfile, CancellationToken cancellationToken)
+        {
+            switch (userProfile.UserType)
+            {
+                case "Candidate":
+                    await HandleCandidateAsync(turnContext, cancellationToken);
+                    break;
+                case "HR Assistant":
+                    await HandleInterviewerAsync(turnContext, cancellationToken);
+                    break;
+                case "Administrator":
+                   // await HandleAdministratorAsync(turnContext, cancellationToken);
+                    break;
+                default:
+                    await turnContext.SendActivityAsync("Unknown user type.", cancellationToken: cancellationToken);
+                    break;
+            }
+        }
+
+
+        private async Task HandleCandidateAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        {
+            //TODO: Clean
+            // Candidate-specific logic
+           // await turnContext.SendActivityAsync("Hello Candidate! How can I assist you today?", cancellationToken: cancellationToken);
+            
+           
+
+           // await turnContext.SendActivityAsync(reply, cancellationToken);
+        }
+
+        private async Task HandleInterviewerAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        {
+            // Interviewer-specific logic
+            var reply = await ProcessInput(turnContext, cancellationToken);
+            //await turnContext.SendActivityAsync("Hello HR Assitant! Would you like to generate interview questions? please upload Post Description here! \"", cancellationToken: cancellationToken);
+        }
+
+        private async Task HandleAdministratorAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        {
+            // Administrator-specific logic
+            await turnContext.SendActivityAsync("Hello Administrator! What administrative task would you like to perform?", cancellationToken: cancellationToken);
         }
     }
 }
