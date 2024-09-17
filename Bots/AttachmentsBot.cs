@@ -34,7 +34,7 @@ namespace Microsoft.BotBuilderSamples
         private static FormRecognizerService _formRecognizerService;
         private static OpenAIService _openAIService;
 
-        private static string _containerName = "pdf-files"; // Name of the container in your blob storage
+        private static string _containerName = "pdf-jobs"; // Name of the container in your blob storage
 
         public AttachmentsBot(BlobServiceClient blobServiceClient, FormRecognizerService formRecognizerService,OpenAIService openAIService)
         {
@@ -171,21 +171,22 @@ namespace Microsoft.BotBuilderSamples
                 {
 
                     //TODO: 1- Decomment below LOC, where its enable upload PDF file to Azure Storage
-                    //// Get a reference to the blob container
-                    //var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-                    //await containerClient.CreateIfNotExistsAsync();
+                    // Get a reference to the blob container
+                    var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+                    await containerClient.CreateIfNotExistsAsync();
 
-                    //// Get a reference to the blob where the file will be uploaded
-                    //var blobClient = containerClient.GetBlobClient(file.Name);
+                    // Get a reference to the blob where the file will be uploaded
+                    var blobClient = containerClient.GetBlobClient(file.Name);
 
-                    //// Upload the file to Azure Blob Storage
-                    //await blobClient.UploadAsync(stream, true);
+                    // Upload the file to Azure Blob Storage
+                    await blobClient.UploadAsync(stream, true);
 
                     //Extract Content
-                    // Step 1: Extract text from PDF
-                    var jobDescriptionText = await _formRecognizerService.ExtractTextFromPdfAsync(remoteFileUrl);
-                    var questions = await _openAIService.GenerateInterviewQuestions(jobDescriptionText);
+                     var jobDescriptionText = await _formRecognizerService.ExtractTextFromPdfAsync(remoteFileUrl);
 
+                    //Generate 5 Questions Using AI Service
+                    var questions = await _openAIService.GenerateInterviewQuestions(jobDescriptionText);
+                    
                     replyText += $"Attachment \"{file.Name}\"" +
                              $" has been received and saved to \"{localFileName}\"\r\n" +
                              // $"{jobDescriptionText}\"\r\n"+

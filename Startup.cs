@@ -16,6 +16,7 @@ using System;
 using Azure;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using HandlingAttachmentsBot;
+using Azure.Data.Tables;
 
 namespace Microsoft.BotBuilderSamples
 {
@@ -34,9 +35,10 @@ namespace Microsoft.BotBuilderSamples
         {
             #region add cloud Client service
 
+
             // Blob Service
             // Read the connection string from appsettings.json
-            var blobConnectionString = Configuration.GetSection("AzureBlobStorage:ConnectionString").Value; 
+            var blobConnectionString = Configuration.GetSection("AzureBlobStorage:ConnectionString").Value;
             //ConfigurationExtensions.GetRequiredSection<string>("AzureBlobStorage:ConnectionString");
 
             // Create BlobServiceClient using the connection string from appsettings.json
@@ -62,7 +64,12 @@ namespace Microsoft.BotBuilderSamples
             var formRecognizerService = new FormRecognizerService(FormRecognizerEndPoint, FormRecognizerApiKey);
             services.AddSingleton(formRecognizerService);
 
-            
+            //TableService
+            // Read the connection string from appsettings.json
+            var tableServiceClient = new TableServiceClient(blobConnectionString);
+            services.AddSingleton(tableServiceClient);
+
+
             //OPenAI Service
             // Read the EndPoint from appsettings.json
             var openAIServiceEndPoint = Configuration.GetSection("AiService:Endpoint").Value;
@@ -73,8 +80,10 @@ namespace Microsoft.BotBuilderSamples
             // Read the Model DeploymentName from appsettings.json
             var DeploymentName = Configuration.GetSection("AiService:DeploymentName").Value;
 
-            var openAIService = new OpenAIService(openAIServiceEndPoint, openAIServiceEndPointApiKey, DeploymentName);
+            var openAIService = new OpenAIService(openAIServiceEndPoint, openAIServiceEndPointApiKey, DeploymentName, tableServiceClient);
             services.AddSingleton(openAIService);
+
+
 
             #endregion
 

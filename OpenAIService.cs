@@ -8,6 +8,9 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
 using Azure.AI.OpenAI;
+using Azure.Data.Tables;
+using ScoutTalentBot.Model;
+using Microsoft.Rest;
 
 namespace HandlingAttachmentsBot
 {
@@ -18,6 +21,7 @@ namespace HandlingAttachmentsBot
         private readonly string _apiKey;
         private readonly string _endPoint;
         private readonly string _deploymentname;
+        private readonly TableServiceClient _tableServiceClient;
 
         public class OpenAIRequest
         {
@@ -25,19 +29,18 @@ namespace HandlingAttachmentsBot
             public int MaxTokens { get; set; } = 150;
         }
 
-        public OpenAIService(string openAiEndpoint, string openAiKey, string deploymentname)
+        public OpenAIService(string openAiEndpoint, string openAiKey, string deploymentname, TableServiceClient tableServiceClient)
         {
-
-            //_openAIClient = new(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
             _apiKey = openAiKey;
-            _endPoint= openAiEndpoint;
+            _endPoint = openAiEndpoint;
             _deploymentname = deploymentname;
             _openAIClient = new AzureOpenAIClient(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
+            _tableServiceClient = tableServiceClient;
         }
 
         public async Task<string> GenerateInterviewQuestions(string jobDescription)
         {
-                  
+
             ChatClient chatClient = _openAIClient.GetChatClient(_deploymentname);
             ChatCompletion completion = chatClient.CompleteChat(
               new ChatMessage[] {
@@ -55,6 +58,32 @@ namespace HandlingAttachmentsBot
               }
             );
 
+            var tableClient = _tableServiceClient.GetTableClient(tableName: "InterviewQuestions");
+            // Create the table if it doesn't exist
+            await tableClient.CreateIfNotExistsAsync();
+            try
+            {
+                // Create a new entity with job description and questions
+                var questionEntity = new InterviewQuestionEntity
+                {
+                    PartitionKey = "PD-Questions",  // or use HR's ID to group questions
+                    RowKey = Guid.NewGuid().ToString(), // Unique ID for each set of questions
+                    JobDescription = jobDescription,
+                    Questions = completion.Content[0].Text,
+                    CreatedDate = DateTime.UtcNow,
+                    Timestamp = DateTime.UtcNow
+
+                };
+
+                // Add the entity to the table
+                await tableClient.AddEntityAsync(questionEntity);
+            }
+            catch (Exception ex)
+            {
+
+                var msg = ex.Message.ToString();
+
+            }
             return $"{completion.Role.ToString()}: {completion.Content[0].Text}";
 
         }
@@ -63,3 +92,4 @@ namespace HandlingAttachmentsBot
 
     }
 }
+
